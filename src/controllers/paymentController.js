@@ -17,6 +17,29 @@ const paymentController = {
     } catch (err) {
       return res.status(500).send({ message: 'Erro ao buscar pagamento' });
     }
+  },
+
+  createStripeCheckoutSession: async (req, res) => {
+    try {
+      const result = await paymentBLL.createStripeCheckoutSession(req.user.id, req.body.order_id);
+      return res.status(201).send(result);
+    } catch (err) {
+      return res.status(err.status || 500).send({
+        message: err.message || 'Erro ao criar sessão de checkout'
+      });
+    }
+  },
+
+  handleStripeWebhook: async (req, res) => {
+    try {
+      const signature = req.headers['stripe-signature'];
+      const result = await paymentBLL.handleStripeWebhook(req.body, signature);
+      return res.status(200).send(result);
+    } catch (err) {
+      return res.status(err.status || 500).send({
+        message: err.message || 'Erro ao processar webhook Stripe'
+      });
+    }
   }
 };
 

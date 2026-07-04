@@ -60,6 +60,23 @@ const orderDAL = {
     return result;
   },
 
+  updateOrderTotals: async (id, totals, db = pool) => {
+    const [result] = await db.query(
+      `UPDATE orders
+       SET subtotal = ?, discount_total = ?, shipping_total = ?, total = ?, currency = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [
+        totals.subtotal,
+        totals.discount_total,
+        totals.shipping_total,
+        totals.total,
+        totals.currency,
+        id
+      ]
+    );
+    return result;
+  },
+
   listMyOrders: async (userId) => {
     const [rows] = await pool.query(`SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC`, [userId]);
     return rows;
@@ -67,6 +84,21 @@ const orderDAL = {
 
   listOrderItems: async (orderId, db = pool) => {
     const [rows] = await db.query(`SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC`, [orderId]);
+    return rows;
+  },
+
+  listOrderItemsForPayment: async (orderId, db = pool) => {
+    const [rows] = await db.query(
+      `SELECT oi.id, oi.order_id, oi.variant_id, oi.product_name, oi.variant_sku,
+              oi.color, oi.size, oi.quantity, pv.price AS current_unit_price,
+              p.name AS current_product_name
+       FROM order_items oi
+       JOIN product_variants pv ON pv.id = oi.variant_id
+       JOIN products p ON p.id = pv.product_id
+       WHERE oi.order_id = ?
+       ORDER BY oi.id ASC`,
+      [orderId]
+    );
     return rows;
   },
 

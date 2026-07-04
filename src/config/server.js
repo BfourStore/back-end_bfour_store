@@ -16,6 +16,7 @@ const productRoutes = require("../routes/productRoutes");
 const cartRoutes = require("../routes/cartRoutes");
 const orderRoutes = require("../routes/orderRoutes");
 const paymentRoutes = require("../routes/paymentRoutes");
+const paymentController = require("../controllers/paymentController");
 
 // Endpoints de compatibilidade com o front (template)
 const categoryDAL = require("../dal/categoryDAL");
@@ -25,6 +26,11 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
+app.post(
+  "/api/payments/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  paymentController.handleStripeWebhook
+);
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 

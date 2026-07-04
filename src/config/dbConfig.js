@@ -1,20 +1,15 @@
 const mysql = require("mysql2/promise");
 
-const pool = mysql.createPool({
-  // Railway (producao / acesso externo)
-  host: process.env.DB_HOST || "zephyr.proxy.rlwy.net",
-  port: Number(process.env.DB_PORT || 20264),
-  user: process.env.DB_USER || "root",
-  password:
-    process.env.DB_PASSWORD || "vUgNbBpTOjgRdDEBZGJOmtyufecAOjEI",
-  database: process.env.DB_NAME || "railway",
+const useLocalDb = String(process.env.USE_LOCAL_DB || "").toLowerCase() === "true";
 
-  // Local (descomente para voltar a usar o banco local)
-  // host: process.env.DB_HOST || "127.0.0.1",
-  // port: Number(process.env.DB_PORT || 3306),
-  // user: process.env.DB_USER || "root",
-  // password: process.env.DB_PASSWORD || "",
-  // database: process.env.DB_NAME || "bfour_db",
+const pool = mysql.createPool({
+  host: useLocalDb ? (process.env.LOCAL_DB_HOST || "127.0.0.1") : (process.env.DB_HOST || "zephyr.proxy.rlwy.net"),
+  port: Number(useLocalDb ? (process.env.LOCAL_DB_PORT || 3306) : (process.env.DB_PORT || 20264)),
+  user: useLocalDb ? (process.env.LOCAL_DB_USER || "root") : (process.env.DB_USER || "root"),
+  password: useLocalDb
+    ? (process.env.LOCAL_DB_PASSWORD || "")
+    : (process.env.DB_PASSWORD || "vUgNbBpTOjgRdDEBZGJOmtyufecAOjEI"),
+  database: useLocalDb ? (process.env.LOCAL_DB_NAME || "bfour_db") : (process.env.DB_NAME || "railway"),
 
   waitForConnections: true,
   connectionLimit: 10,
