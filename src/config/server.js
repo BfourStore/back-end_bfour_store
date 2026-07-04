@@ -27,7 +27,7 @@ const app = express();
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.post(
-  "/api/payments/stripe/webhook",
+  ["/api/payments/stripe/webhook", "/api/payments/webhook", "/stripe/webhook", "/webhook"],
   express.raw({ type: "application/json" }),
   paymentController.handleStripeWebhook
 );

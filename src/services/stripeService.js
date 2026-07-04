@@ -41,6 +41,12 @@ async function createCheckoutSession({ order, lineItems }) {
     success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
     cancel_url: `${baseUrl}/checkout/cancel?order_id=${order.id}`,
     client_reference_id: String(order.id),
+    payment_intent_data: {
+      metadata: {
+        order_id: String(order.id),
+        order_number: String(order.order_number)
+      }
+    },
     metadata: {
       order_id: String(order.id),
       order_number: String(order.order_number)

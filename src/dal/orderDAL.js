@@ -60,6 +60,18 @@ const orderDAL = {
     return result;
   },
 
+  updateOrderStatusIfCurrent: async (id, status, currentStatuses, db = pool) => {
+    const placeholders = currentStatuses.map(() => '?').join(', ');
+    const [result] = await db.query(
+      `UPDATE orders
+       SET status = ?, updated_at = NOW()
+       WHERE id = ?
+         AND status IN (${placeholders})`,
+      [status, id, ...currentStatuses]
+    );
+    return result;
+  },
+
   updateOrderTotals: async (id, totals, db = pool) => {
     const [result] = await db.query(
       `UPDATE orders
