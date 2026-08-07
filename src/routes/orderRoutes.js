@@ -6,6 +6,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 router.post('/place-order', authMiddleware, orderController.placeOrderFromCart);
 router.post('/', authMiddleware, orderController.create);
 router.get('/my', authMiddleware, orderController.listMy);
+router.get('/number/:orderNumber', authMiddleware, orderController.getByNumber);
 router.patch('/:id/cancel', authMiddleware, orderController.cancel);
 router.get('/:id', authMiddleware, orderController.getById);
 

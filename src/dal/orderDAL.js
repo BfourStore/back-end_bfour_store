@@ -47,6 +47,30 @@ const orderDAL = {
     return rows[0] || null;
   },
 
+  getOrderByNumber: async (orderNumber, db = pool) => {
+    const [rows] = await db.query(
+      `SELECT
+         o.*,
+         a.receiver_name AS address_receiver_name,
+         a.phone AS address_phone,
+         a.country AS address_country,
+         a.state AS address_state,
+         a.city AS address_city,
+         a.neighborhood AS address_neighborhood,
+         a.street AS address_street,
+         a.number AS address_number,
+         a.complement AS address_complement,
+         a.zip_code AS address_zip_code,
+         a.is_default AS address_is_default,
+         a.created_at AS address_created_at
+       FROM orders o
+       LEFT JOIN addresses a ON a.id = o.address_id
+       WHERE o.order_number = ?`,
+      [orderNumber]
+    );
+    return rows[0] || null;
+  },
+
   getOrderByIdForUpdate: async (id, db = pool) => {
     const [rows] = await db.query(`SELECT * FROM orders WHERE id = ? FOR UPDATE`, [id]);
     return rows[0] || null;
@@ -95,7 +119,28 @@ const orderDAL = {
   },
 
   listOrderItems: async (orderId, db = pool) => {
-    const [rows] = await db.query(`SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC`, [orderId]);
+    const [rows] = await db.query(
+      `SELECT
+         oi.*,
+         COALESCE(
+           (SELECT i.image_url
+            FROM product_images i
+            WHERE i.variant_id = oi.variant_id
+            ORDER BY i.is_cover DESC, i.sort_order ASC, i.id ASC
+            LIMIT 1),
+           (SELECT i.image_url
+            FROM product_images i
+            WHERE i.product_id = p.id AND i.variant_id IS NULL
+            ORDER BY i.is_cover DESC, i.sort_order ASC, i.id ASC
+            LIMIT 1)
+         ) AS image_url
+       FROM order_items oi
+       LEFT JOIN product_variants pv ON pv.id = oi.variant_id
+       LEFT JOIN products p ON p.id = pv.product_id
+       WHERE oi.order_id = ?
+       ORDER BY oi.id ASC`,
+      [orderId]
+    );
     return rows;
   },
 

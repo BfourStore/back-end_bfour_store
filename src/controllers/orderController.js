@@ -34,6 +34,18 @@ const orderController = {
     }
   },
 
+  getByNumber: async (req, res) => {
+    try {
+      const order = await orderBLL.getByNumber(req.params.orderNumber, req.user);
+      return res.status(200).send(order);
+    } catch (err) {
+      return res.status(err.status || 500).send({
+        message: err.message || 'Erro ao buscar pedido',
+        details: err.details
+      });
+    }
+  },
+
   cancel: async (req, res) => {
     try {
       const order = await orderBLL.cancel(req.params.id, req.user);

@@ -22,6 +22,51 @@ function createOutOfStockError({ snap, variantId, requested, available }) {
 
 const NON_CANCELABLE_STATUSES = ['CANCELLED', 'SHIPPED', 'DELIVERED'];
 
+function formatOrderWithAddress(order) {
+  const {
+    address_receiver_name,
+    address_phone,
+    address_country,
+    address_state,
+    address_city,
+    address_neighborhood,
+    address_street,
+    address_number,
+    address_complement,
+    address_zip_code,
+    address_is_default,
+    address_created_at,
+    ...orderData
+  } = order;
+
+  const address = order.address_id
+    ? {
+        id: order.address_id,
+        receiver_name: address_receiver_name,
+        phone: address_phone,
+        country: address_country,
+        state: address_state,
+        city: address_city,
+        neighborhood: address_neighborhood,
+        street: address_street,
+        number: address_number,
+        complement: address_complement,
+        zip_code: address_zip_code,
+        is_default: address_is_default,
+        created_at: address_created_at
+      }
+    : null;
+
+  return { ...orderData, address };
+}
+
+function formatOrderItems(items) {
+  return items.map(item => ({
+    ...item,
+    imagePath: item.image_url || ''
+  }));
+}
+
 async function buildOrderItemsWithStockValidation(items, db) {
   let subtotal = 0;
   const orderItems = [];
@@ -137,7 +182,7 @@ const orderBLL = {
       await orderDAL.clearCart(userId, conn);
 
       const createdOrder = await orderDAL.getOrderById(orderId, conn);
-      const createdItems = await orderDAL.listOrderItems(orderId, conn);
+      const createdItems = formatOrderItems(await orderDAL.listOrderItems(orderId, conn));
 
       await conn.commit();
       return { ...createdOrder, items: createdItems };
@@ -202,7 +247,7 @@ const orderBLL = {
       }
 
       const createdOrder = await orderDAL.getOrderById(orderId, conn);
-      const createdItems = await orderDAL.listOrderItems(orderId, conn);
+      const createdItems = formatOrderItems(await orderDAL.listOrderItems(orderId, conn));
 
       await conn.commit();
       return { ...createdOrder, items: createdItems };
@@ -217,8 +262,27 @@ const orderBLL = {
   getById: async (id) => {
     const order = await orderDAL.getOrderById(id);
     if (!order) return null;
-    const items = await orderDAL.listOrderItems(id);
+    const items = formatOrderItems(await orderDAL.listOrderItems(id));
     return { ...order, items };
+  },
+
+  getByNumber: async (orderNumber, user) => {
+    const order = await orderDAL.getOrderByNumber(orderNumber);
+
+    if (!order) {
+      const err = new Error('Pedido não encontrado');
+      err.status = 404;
+      throw err;
+    }
+
+    if (Number(order.user_id) !== Number(user.id)) {
+      const err = new Error('Sem permissão para visualizar este pedido');
+      err.status = 403;
+      throw err;
+    }
+
+    const items = formatOrderItems(await orderDAL.listOrderItems(order.id));
+    return { ...formatOrderWithAddress(order), items };
   },
 
   cancel: async (id, user) => {
@@ -267,7 +331,7 @@ const orderBLL = {
       await orderDAL.updateOrderStatus(id, 'CANCELLED', conn);
 
       const canceledOrder = await orderDAL.getOrderById(id, conn);
-      const canceledItems = await orderDAL.listOrderItems(id, conn);
+      const canceledItems = formatOrderItems(await orderDAL.listOrderItems(id, conn));
 
       await conn.commit();
       return { ...canceledOrder, items: canceledItems };
@@ -279,7 +343,18 @@ const orderBLL = {
     }
   },
 
-  listMy: async (userId) => orderDAL.listMyOrders(userId)
+  listMy: async (userId) => {
+    const orders = await orderDAL.listMyOrders(userId);
+
+    return Promise.all(orders.map(async (order) => {
+      const items = formatOrderItems(await orderDAL.listOrderItems(order.id));
+      return {
+        ...order,
+        items_preview: items.slice(0, 4),
+        items_count: items.length
+      };
+    }));
+  }
 };
 
 module.exports = orderBLL;

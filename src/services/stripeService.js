@@ -38,7 +38,7 @@ async function createCheckoutSession({ order, lineItems }) {
     mode: 'payment',
     payment_method_types: ['card'],
     line_items: lineItems,
-    success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`,
+    success_url: `${baseUrl}/my-orders/${order.order_number}?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/checkout/cancel?order_id=${order.id}`,
     client_reference_id: String(order.id),
     payment_intent_data: {
